@@ -18,6 +18,9 @@
  */
 class BTLeafNode {
   public:
+    //leaf node constructor
+    BTLeafNode();
+
    /**
     * Insert the (key, rid) pair to the node.
     * Remember that all keys inside a B+tree node should be kept sorted.
@@ -81,7 +84,13 @@ class BTLeafNode {
     * @return the number of keys in the node
     */
     int getKeyCount();
- 
+    
+    /**
+     * Return the maximum number of keys that can be stored in the node
+     * @return the max number of keys that can be stored in the node
+     */
+     int getMaxKeys();
+
    /**
     * Read the content of the node from the page pid in the PageFile pf.
     * @param pid[IN] the PageId to read
@@ -98,6 +107,11 @@ class BTLeafNode {
     */
     RC write(PageId pid, PageFile& pf);
 
+    void print();
+    char* getBuffer()
+    {
+        return buffer;
+    }
   private:
    /**
     * The main memory buffer for loading the content of the disk page 
@@ -112,6 +126,8 @@ class BTLeafNode {
  */
 class BTNonLeafNode {
   public:
+
+    BTNonLeafNode();
    /**
     * Insert a (key, pid) pair to the node.
     * Remember that all keys inside a B+tree node should be kept sorted.
@@ -160,6 +176,26 @@ class BTNonLeafNode {
     */
     int getKeyCount();
 
+    /**
+    * Return the maximum number of keys that can be stored in the node
+    * @return the max number of keys that can be stored in the node
+    */
+    int getMaxKeys();
+
+    /**
+    * If searchKey exists in the node, set eid to the index entry
+    * with searchKey and return 0. If not, set eid to the index entry
+    * immediately after the largest index key that is smaller than searchKey, 
+    * and return the error code RC_NO_SUCH_RECORD.
+    * Remember that keys inside a B+tree node are always kept sorted.
+    * @param searchKey[IN] the key to search for.
+    * @param eid[OUT] the index entry number with searchKey or immediately
+                      behind the largest key smaller than searchKey.
+    * @return 0 if searchKey is found. If not, RC_NO_SEARCH_RECORD.
+    */
+     RC locate(int searchKey, int& eid);
+
+
    /**
     * Read the content of the node from the page pid in the PageFile pf.
     * @param pid[IN] the PageId to read
@@ -176,6 +212,11 @@ class BTNonLeafNode {
     */
     RC write(PageId pid, PageFile& pf);
 
+    char* getBuffer()
+    {
+        return buffer;
+    }
+    void print();
   private:
    /**
     * The main memory buffer for loading the content of the disk page 

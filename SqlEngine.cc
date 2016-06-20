@@ -14,6 +14,7 @@
 #include <fstream>
 #include "Bruinbase.h"
 #include "SqlEngine.h"
+#include "BTreeIndex.h"
 
 using namespace std;
 
@@ -133,7 +134,78 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
   /* your code here */
+    RC rc;
+    RecordFile rf;
+    fstream fs;
+    int key;
+    string val;
+    RecordId rid;
+    string line;
+    BTreeIndex btree;
 
+    //open stream
+    fs.open(loadfile.c_str(),fstream::in);
+
+    if(!fs.is_open())
+      fprintf(stderr,"Error: Could not open %s\n",loadfile.c_str());
+
+    //open record file in write mode. on fail return
+    if(rf.open(table + ".tbl", 'w'))
+        return RC_FILE_OPEN_FAILED;
+
+    //if index is true use B+ tree index
+    if(index)//should work but double check
+    {
+        rc=rf.append(key,val,rid);
+      int iterator=0;
+      rc=btree.open(table + ".idx",'w');
+      if(!rc)
+      {
+        int iterator=0;
+
+        while(getline(fs,line))
+        {
+          rc=parseLoadLine(line,key,val);
+          if(rc)
+            break;
+
+          rc=rf.append(key,val,rid);
+          if(rc)
+            break;
+
+          rc=btree.insert(key,rid);
+          if(rc)
+            break;
+        }
+        //close tree
+        btree.close();
+      }
+    }
+    else{//no index
+      //get lines, parse them, and append them
+      while(!fs.eof()){
+          getline(fs, line);
+
+          //parse line, on failure rc will be set to errorcode
+          rc=parseLoadLine(line, key, val);
+          if(rc)
+              break;
+
+          //append, on failure rc will be set to errorcode
+          rc=rf.append(key, val, rid);
+          if(rc)
+              break;
+      }
+    }
+
+    //close stream
+    fs.close();
+
+    if(rf.close())
+        return RC_FILE_CLOSE_FAILED;
+
+    //return 0 if loaded properly and errorcode on failure
+    return rc;
   return 0;
 }
 
