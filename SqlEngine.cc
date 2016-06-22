@@ -37,7 +37,7 @@ RC SqlEngine::run(FILE* commandline)
 
 RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 {
-  RecordFile rf;   // RecordFile containing the table
+  RecordFile archivo_registro;   // RecordFile containing the table
   RecordId   rid;  // record cursor for table scanning
 
   RC     rc;
@@ -47,7 +47,7 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   int    diff;
 
   // open the table file
-  if ((rc = rf.open(table + ".tbl", 'r')) < 0) {
+  if ((rc = archivo_registro.open(table + ".tbl", 'r')) < 0) {
     fprintf(stderr, "Error: table %s does not exist\n", table.c_str());
     return rc;
   }
@@ -55,9 +55,9 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   // scan the table file from the beginning
   rid.pid = rid.sid = 0;
   count = 0;
-  while (rid < rf.endRid()) {
+  while (rid < archivo_registro.endRid()) {
     // read the tuple
-    if ((rc = rf.read(rid, key, value)) < 0) {
+    if ((rc = archivo_registro.read(rid, key, value)) < 0) {
       fprintf(stderr, "Error: while reading a tuple from table %s\n", table.c_str());
       goto exit_select;
     }
@@ -125,17 +125,15 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
   }
   rc = 0;
 
-  // close the table file and return
   exit_select:
-  rf.close();
+  archivo_registro.close();
   return rc;
 }
 
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
-  /* your code here */
     RC rc;
-    RecordFile rf;
+    RecordFile archivo_registro;
     fstream fs;
     int key;
     string val;
@@ -150,13 +148,13 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
       fprintf(stderr,"Error: Could not open %s\n",loadfile.c_str());
 
     //open record file in write mode. on fail return
-    if(rf.open(table + ".tbl", 'w'))
+    if(archivo_registro.open(table + ".tbl", 'w'))
         return RC_FILE_OPEN_FAILED;
 
     //if index is true use B+ tree index
     if(index)//should work but double check
     {
-        rc=rf.append(key,val,rid);
+        rc=archivo_registro.append(key,val,rid);
       int iterator=0;
       rc=btree.open(table + ".idx",'w');
       if(!rc)
@@ -169,7 +167,7 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
           if(rc)
             break;
 
-          rc=rf.append(key,val,rid);
+          rc=archivo_registro.append(key,val,rid);
           if(rc)
             break;
 
@@ -192,7 +190,7 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
               break;
 
           //append, on failure rc will be set to errorcode
-          rc=rf.append(key, val, rid);
+          rc=archivo_registro.append(key, val, rid);
           if(rc)
               break;
       }
@@ -201,7 +199,7 @@ RC SqlEngine::load(const string& table, const string& loadfile, bool index)
     //close stream
     fs.close();
 
-    if(rf.close())
+    if(archivo_registro.close())
         return RC_FILE_CLOSE_FAILED;
 
     //return 0 if loaded properly and errorcode on failure
