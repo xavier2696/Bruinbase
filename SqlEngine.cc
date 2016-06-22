@@ -1,12 +1,3 @@
-/**
- * Copyright (C) 2008 by The Regents of the University of California
- * Redistribution of this file is permitted under the terms of the GNU
- * Public License (GPL).
- *
- * @author Junghoo "John" Cho <cho AT cs.ucla.edu>
- * @date 3/24/2008
- */
-
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -18,7 +9,7 @@
 
 using namespace std;
 
-// external functions and variables for load file and sql command parsing 
+
 extern FILE* sqlin;
 int sqlparse(void);
 
@@ -27,54 +18,53 @@ RC SqlEngine::run(FILE* commandline)
 {
   fprintf(stdout, "Bruinbase> ");
 
-  // set the command line input and start parsing user input
+  
   sqlin = commandline;
-  sqlparse();  // sqlparse() is defined in SqlParser.tab.c generated from
-               // SqlParser.y by bison (bison is GNU equivalent of yacc)
+  sqlparse();  
+               
 
   return 0;
 }
 
 RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
 {
-  RecordFile archivo_registro;   // RecordFile containing the table
-  RecordId   rid;  // record cursor for table scanning
+  RecordFile archivo_registro;   
+  RecordId   id_record;  
 
-  RC     rc;
-  int    key;     
+  RC     temporal;
+  int    llave;     
   string value;
   int    count;
   int    diff;
 
-  // open the table file
-  if ((rc = archivo_registro.open(table + ".tbl", 'r')) < 0) {
-    fprintf(stderr, "Error: table %s does not exist\n", table.c_str());
-    return rc;
+  
+  if ((temporal = archivo_registro.open(table + ".tbl", 'r')) < 0) {
+    fprintf(stderr, "Error\n", table.c_str());
+    return temporal;
   }
 
-  // scan the table file from the beginning
-  rid.pid = rid.sid = 0;
+  
+  id_record.pid = id_record.sid = 0;
   count = 0;
-  while (rid < archivo_registro.endRid()) {
-    // read the tuple
-    if ((rc = archivo_registro.read(rid, key, value)) < 0) {
-      fprintf(stderr, "Error: while reading a tuple from table %s\n", table.c_str());
+  while (id_record < archivo_registro.endRid()) {
+    
+    if ((temporal = archivo_registro.read(id_record, llave, value)) < 0) {
+      fprintf(stderr, "Error\n", table.c_str());
       goto exit_select;
     }
 
-    // check the conditions on the tuple
+    
     for (unsigned i = 0; i < cond.size(); i++) {
-      // compute the difference between the tuple value and the condition value
+      
       switch (cond[i].attr) {
       case 1:
-	diff = key - atoi(cond[i].value);
+	diff = llave - atoi(cond[i].value);
 	break;
       case 2:
 	diff = strcmp(value.c_str(), cond[i].value);
 	break;
       }
 
-      // skip the tuple if any condition is not met
       switch (cond[i].comp) {
       case SelCond::EQ:
 	if (diff != 0) goto next_tuple;
@@ -97,150 +87,152 @@ RC SqlEngine::select(int attr, const string& table, const vector<SelCond>& cond)
       }
     }
 
-    // the condition is met for the tuple. 
-    // increase matching tuple counter
+
     count++;
 
-    // print the tuple 
+
     switch (attr) {
-    case 1:  // SELECT key
-      fprintf(stdout, "%d\n", key);
+    case 1:  
+      fprintf(stdout, "%d\n", llave);
       break;
-    case 2:  // SELECT value
+    case 2:  
       fprintf(stdout, "%s\n", value.c_str());
       break;
-    case 3:  // SELECT *
-      fprintf(stdout, "%d '%s'\n", key, value.c_str());
+    case 3:  
+      fprintf(stdout, "%d '%s'\n", llave, value.c_str());
       break;
     }
 
-    // move to the next tuple
+
     next_tuple:
-    ++rid;
+    ++id_record;
   }
 
-  // print matching tuple count if "select count(*)"
+
   if (attr == 4) {
     fprintf(stdout, "%d\n", count);
   }
-  rc = 0;
+  temporal = 0;
 
   exit_select:
   archivo_registro.close();
-  return rc;
+  return temporal;
 }
 
 RC SqlEngine::load(const string& table, const string& loadfile, bool index)
 {
-    RC rc;
+    RC temporal;
     RecordFile archivo_registro;
-    fstream fs;
-    int key;
-    string val;
-    RecordId rid;
-    string line;
-    BTreeIndex btree;
+    fstream stream_archivo;
+    int llave;
+    string valor;
+    RecordId id_record;
+    string linea;
+    BTreeIndex arbol;
 
-    //open stream
-    fs.open(loadfile.c_str(),fstream::in);
 
-    if(!fs.is_open())
-      fprintf(stderr,"Error: Could not open %s\n",loadfile.c_str());
+    stream_archivo.open(loadfile.c_str(),fstream::in);
 
-    //open record file in write mode. on fail return
+    if(!stream_archivo.is_open())
+      fprintf(stderr,"Error %s\n",loadfile.c_str());
+
+
     if(archivo_registro.open(table + ".tbl", 'w'))
         return RC_FILE_OPEN_FAILED;
 
-    //if index is true use B+ tree index
-    if(index)//should work but double check
+
+    if(index)
     {
-        rc=archivo_registro.append(key,val,rid);
+        temporal=archivo_registro.append(llave,valor,id_record);
       int iterator=0;
-      rc=btree.open(table + ".idx",'w');
-      if(!rc)
+      temporal=arbol.open(table + ".idx",'w');
+      if(!temporal)
       {
         int iterator=0;
 
-        while(getline(fs,line))
+        while(getline(stream_archivo,linea))
         {
-          rc=parseLoadLine(line,key,val);
-          if(rc)
+          temporal=parseLoadLine(linea,llave,valor);
+          if(temporal)
             break;
 
-          rc=archivo_registro.append(key,val,rid);
-          if(rc)
+          temporal=archivo_registro.append(llave,valor,id_record);
+          if(temporal)
             break;
 
-          rc=btree.insert(key,rid);
-          if(rc)
+          temporal=arbol.insert(llave,id_record);
+          if(temporal)
             break;
         }
-        //close tree
-        btree.close();
+
+        arbol.close();
       }
     }
-    else{//no index
-      //get lines, parse them, and append them
-      while(!fs.eof()){
-          getline(fs, line);
+    else{
 
-          //parse line, on failure rc will be set to errorcode
-          rc=parseLoadLine(line, key, val);
-          if(rc)
+      while(!stream_archivo.eof()){
+          getline(stream_archivo, linea);
+
+
+          temporal=parseLoadLine(linea, llave, valor);
+          if(temporal)
               break;
 
-          //append, on failure rc will be set to errorcode
-          rc=archivo_registro.append(key, val, rid);
-          if(rc)
+
+          temporal=archivo_registro.append(llave, valor, id_record);
+          if(temporal)
               break;
       }
     }
 
-    //close stream
-    fs.close();
+
+    stream_archivo.close();
 
     if(archivo_registro.close())
         return RC_FILE_CLOSE_FAILED;
 
-    //return 0 if loaded properly and errorcode on failure
-    return rc;
+    cout << "Se creo el archivo" << endl;
+    if(index){
+      cout << "Se creo el indice" << endl;
+    }  
+    return temporal;
   return 0;
 }
 
-RC SqlEngine::parseLoadLine(const string& line, int& key, string& value)
+RC SqlEngine::parseLoadLine(const string& linea, int& llave, string& value)
 {
     const char *s;
     char        c;
     string::size_type loc;
     
-    // ignore beginning white spaces
-    c = *(s = line.c_str());
+
+    c = *(s = linea.c_str());
     while (c == ' ' || c == '\t') { c = *++s; }
 
-    // get the integer key value
-    key = atoi(s);
 
-    // look for comma
+    llave = atoi(s);
+
+
     s = strchr(s, ',');
     if (s == NULL) { return RC_INVALID_FILE_FORMAT; }
 
-    // ignore white spaces
+
     do { c = *++s; } while (c == ' ' || c == '\t');
     
-    // if there is nothing left, set the value to empty string
+
     if (c == 0) { 
         value.erase();
         return 0;
     }
 
-    // is the value field delimited by ' or "?
+
     if (c == '\'' || c == '"') {
         s++;
     } else {
         c = '\n';
     }
 
-    // get the value string
+
     value.assign(s);
     loc = value.find(c, 0);
     if (loc != string::npos) { value.erase(loc); }
