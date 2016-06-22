@@ -1,12 +1,3 @@
-/*
- * Copyright (C) 2008 by The Regents of the University of California
- * Redistribution of this file is permitted under the terms of the GNU
- * Public License (GPL).xcsfsdfsdfsdfdsfdfsdfsdfsd
- *
- * @author Junghoo "John" Cho <cho AT cs.ucla.edu>
- * @date 3/24/2008
- */
-
 #ifndef BTREEINDEX_H
 #define BTREEINDEX_H
 
